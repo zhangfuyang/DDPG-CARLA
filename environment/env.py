@@ -1,9 +1,9 @@
-from carla import make_carla_client
-from carla.settings import CarlaSettings
-from carla import TCPConnectionError
-from carla import Camera
-from carla.carla_server_pb2 import Control
-from imitation.imitation_learning import ImitationLearning
+from environment.carla.client import make_carla_client
+from environment.carla.settings import CarlaSettings
+from environment.carla.tcp import TCPConnectionError
+from environment.carla.sensor import Camera
+from environment.carla.carla_server_pb2 import Control
+from environment.imitation.imitation_learning import ImitationLearning
 import random
 import time
 import os
@@ -23,6 +23,14 @@ class action_space(object):
     def sample(self):
         return np.random.uniform(self.low, self.high)
 
+class observation_space(object):
+    def __init__(self, dim, high=None, low=None, seed=None):
+        self.shape = (dim,)
+        self.high = high
+        self.low = low
+        self.seed = seed
+
+
 
 class Env(object):
     def __init__(self, MONITOR_DIR, SEED, FPS):
@@ -31,6 +39,7 @@ class Env(object):
         self.connected()
         self.Image_agent = ImitationLearning()
         self.action_space = action_space(2, (1.0, 1.0), (-1.0, -1.0), SEED)
+        self.observation_space = observation_space(int(self.Image_agent._network_tensor.shape[0]) + 3)
         self.render_ = False
         self.image_dir_ = None
         self.image_i_ = 0
@@ -85,7 +94,7 @@ class Env(object):
             info = -1
             self.connected()
 
-        return (feature_vector, (speed, offroad, other_lane)), reward, done, info
+        return np.concatenate((feature_vector, (speed, offroad, other_lane))), reward, done, info
 
     def reset(self):
         self.image_i_ = 0
