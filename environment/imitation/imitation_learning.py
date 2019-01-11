@@ -9,7 +9,7 @@ import numpy as np
 
 slim = tf.contrib.slim
 
-from environment.carla.agent import Agent
+from environment.carla.agent.agent import Agent
 from environment.imitation.imitation_learning_network import load_imitation_learning_network
 
 
