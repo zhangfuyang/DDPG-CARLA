@@ -19,9 +19,6 @@ class OrnsteinUhlenbeckProcess(object):
         return x
 
 
-
-
-
 class GreedyPolicy(object):
     def __init__(self, action_dim, n_steps_annealing, min_epsilon, max_epsilon):
         self.epsilon = max_epsilon

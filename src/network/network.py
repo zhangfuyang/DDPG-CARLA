@@ -16,7 +16,7 @@ class BaseNetwork(object):
         self.learning_rate = learning_rate
         self.tau = tau
 
-    def build_network(self):
+    def build_network(self, scope):
         """
         build network.
         """

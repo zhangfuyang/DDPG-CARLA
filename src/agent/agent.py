@@ -32,19 +32,18 @@ class BaseAgent(object):
         self.eval_periods = eval_periods
         self.env_render = env_render
         self.summary_dir = summary_dir
+        self.saver = tf.train.Saver()
 
         # Initialize Tensorflow variables
         self.sess.run(tf.global_variables_initializer())
 
         self.writer = tf.summary.FileWriter(self.summary_dir, sess.graph)
 
-
     def train(self):
         """
         Train the model. 
         """
         raise NotImplementedError("train() method should be implemented")
-
 
     def evaluate(self, cur_episode):
         """

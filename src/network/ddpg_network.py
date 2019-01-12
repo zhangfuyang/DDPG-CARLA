@@ -5,18 +5,19 @@ from src.utils import discretize
 
 
 class ActorNetwork(BaseNetwork):
-    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau, action_type):
+    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau, action_type, scope='Actor'):
         super(ActorNetwork, self).__init__(sess, state_dim, action_dim, learning_rate, tau)
         self.action_bound = action_bound
         self.action_type = action_type
+        self.scope = scope
 
         # Actor network
-        self.inputs, self.phase, self.outputs, self.scaled_outputs = self.build_network()
-        self.net_params = tf.trainable_variables()
+        self.inputs, self.phase, self.outputs, self.scaled_outputs = self.build_network('eval')
+        self.net_params = tf.trainable_variables(scope=self.scope)
 
         # Target network
-        self.target_inputs, self.target_phase, self.target_outputs, self.target_scaled_outputs = self.build_network()
-        self.target_net_params = tf.trainable_variables()[len(self.net_params):]
+        self.target_inputs, self.target_phase, self.target_outputs, self.target_scaled_outputs = self.build_network('target')
+        self.target_net_params = tf.trainable_variables(scope=self.scope)[len(self.net_params):]
 
         # Op for periodically updating target network with online network weights
         self.update_target_net_params = \
@@ -43,23 +44,31 @@ class ActorNetwork(BaseNetwork):
 
         self.num_trainable_vars = len(self.net_params) + len(self.target_net_params)
 
-    def build_network(self):
+    def build_network(self, scope):
         if self.action_type == 'Continuous':
             inputs = tf.placeholder(tf.float32, shape=(None,) + self.state_dim)
             phase = tf.placeholder(tf.bool)
-            net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
-            net = fully_connected(net, 300, activation_fn=tf.nn.relu)
-            # Final layer weight are initialized to Uniform[-3e-3, 3e-3]
-            outputs = fully_connected(net, self.action_dim, activation_fn=tf.tanh, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
-            scaled_outputs = tf.multiply(outputs, self.action_bound) # Scale output to [-action_bound, action_bound]
+            with tf.variable_scope(self.scope):
+                with tf.variable_scope(scope):
+                    net = fully_connected(inputs, 256, activation_fn=tf.nn.relu)
+                    net = fully_connected(net, 256, activation_fn=tf.nn.relu)
+                    net = fully_connected(net, 128, activation_fn=tf.nn.relu)
+                    net = fully_connected(net, 64, activation_fn=tf.nn.relu)
+                    # Final layer weight are initialized to Uniform[-3e-3, 3e-3]
+                    outputs = fully_connected(net, self.action_dim, activation_fn=tf.tanh, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
+                    scaled_outputs = tf.multiply(outputs, self.action_bound) # Scale output to [-action_bound, action_bound]
         else:
             inputs = tf.placeholder(tf.float32, shape=(None,) + self.state_dim)
             phase = tf.placeholder(tf.bool)
-            net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
-            net = fully_connected(net, 300, activation_fn=tf.nn.relu)
-            # Final layer weight are initialized to Uniform[-3e-3, 3e-3]
-            outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
-            scaled_outputs = discretize(outputs, self.action_dim)
+            with tf.variable_scope(self.scope):
+                with tf.variable_scope(scope):
+                    net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
+                    net = fully_connected(net, 256, activation_fn=tf.nn.relu)
+                    net = fully_connected(net, 128, activation_fn=tf.nn.relu)
+                    net = fully_connected(net, 32, activation_fn=tf.nn.relu)
+                    # Final layer weight are initialized to Uniform[-3e-3, 3e-3]
+                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
+                    scaled_outputs = discretize(outputs, self.action_dim)
             
         return inputs, phase, outputs, scaled_outputs
 
@@ -92,18 +101,20 @@ class ActorNetwork(BaseNetwork):
 
 class CriticNetwork(BaseNetwork):
 
-    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau, num_actor_vars, action_type):
+    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau, num_actor_vars, action_type,
+                 scope='Critic'):
         super(CriticNetwork, self).__init__(sess, state_dim, action_dim, learning_rate, tau)
         self.action_bound = action_bound
         self.action_type = action_type
+        self.scope = scope
 
         # Critic network
-        self.inputs, self.phase, self.action, self.outputs = self.build_network()
-        self.net_params = tf.trainable_variables()[num_actor_vars:]
+        self.inputs, self.phase, self.action, self.outputs = self.build_network('eval')
+        self.net_params = tf.trainable_variables(scope=self.scope)
 
         # Target network
-        self.target_inputs, self.target_phase, self.target_action, self.target_outputs = self.build_network()
-        self.target_net_params = tf.trainable_variables()[len(self.net_params) + num_actor_vars:]
+        self.target_inputs, self.target_phase, self.target_action, self.target_outputs = self.build_network('target')
+        self.target_net_params = tf.trainable_variables(self.scope)[len(self.net_params):]
 
         # Op for periodically updating target network with online network weights
         self.update_target_net_params = \
@@ -120,24 +131,28 @@ class CriticNetwork(BaseNetwork):
 
         # Define loss and optimization Op
         self.loss = tf.reduce_mean(tf.squared_difference(self.predicted_q_value, self.outputs))
-        self.optimize = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
+        self.optimize = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss, var_list=self.net_params)
 
         # Get the gradient of the critic w.r.t. the action
         self.action_grads = tf.gradients(self.outputs, self.action)
 
-    def build_network(self):
+    def build_network(self, scope):
         inputs = tf.placeholder(tf.float32, shape=(None,) + self.state_dim)
         phase = tf.placeholder(tf.bool)
         if self.action_type == 'Continuous':
             action = tf.placeholder(tf.float32, [None, self.action_dim])
-            net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
-            net = fully_connected(tf.concat([net, action], 1), 300, activation_fn=tf.nn.relu)
-            outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
+            with tf.variable_scope(self.scope):
+                with tf.variable_scope(scope):
+                    net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
+                    net = fully_connected(tf.concat([net, action], 1), 300, activation_fn=tf.nn.relu)
+                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
         else:
             action = tf.placeholder(tf.float32, [None, 1])
-            net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
-            net = fully_connected(tf.concat([net, action], 1), 300, activation_fn=tf.nn.relu)
-            outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
+            with tf.variable_scope(self.scope):
+                with tf.variable_scope(scope):
+                    net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
+                    net = fully_connected(tf.concat([net, action], 1), 300, activation_fn=tf.nn.relu)
+                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
 
         return inputs, phase, action, outputs
 

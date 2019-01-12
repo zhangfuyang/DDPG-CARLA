@@ -15,16 +15,14 @@ from environment.imitation.imitation_learning_network import load_imitation_lear
 
 class ImitationLearning(Agent):
 
-    def __init__(self, memory_fraction=0.25, image_cut=(115, 510)):
+    def __init__(self, sess, memory_fraction=0.25, image_cut=(115, 510)):
 
         Agent.__init__(self)
 
         self.dropout_vec = [1.0] * 8 + [0.7] * 2
 
-        config_gpu = tf.ConfigProto()
-
         self._image_size = (88, 200, 3)
-        self._sess = tf.Session(config=config_gpu)
+        self._sess = sess
 
         self._input_images = tf.placeholder("float", shape=[None, self._image_size[0],
                                                             self._image_size[1],
@@ -42,18 +40,12 @@ class ImitationLearning(Agent):
 
         self._models_path = dir_path + '/model/'
 
-        # tf.reset_default_graph()
-        self._sess.run(tf.global_variables_initializer())
-
-        self.load_model()
-
         self._image_cut = image_cut
+        self.variables_to_restore = tf.global_variables()
 
     def load_model(self):
 
-        variables_to_restore = tf.global_variables()
-
-        saver = tf.train.Saver(variables_to_restore, max_to_keep=0)
+        saver = tf.train.Saver(self.variables_to_restore, max_to_keep=0)
 
         if not os.path.exists(self._models_path):
             raise RuntimeError('failed to find the models path')
