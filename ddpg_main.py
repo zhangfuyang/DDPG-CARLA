@@ -26,7 +26,7 @@ flags = tf.app.flags
 #    UTILITY PARAMETERS
 # ================================
 # environment name
-flags.DEFINE_string('env_name', 'carla', 'environment name in gym.')
+flags.DEFINE_string('env_name', 'carla_soft', 'environment name in gym.')
 flags.DEFINE_boolean('env_render', True, 'whether render environment (display).')
 flags.DEFINE_integer('port', 2000, 'simulation listening port')
 DATETIME = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -39,7 +39,7 @@ FPS = 10
 flags.DEFINE_integer('mini_batch', 256, 'mini batch size for training.')
 
 # render interval
-RENDER_INTERVAL = 80
+RENDER_INTERVAL = 100
 # Learning rates actor and critic
 ACTOR_LEARNING_RATE = 0.0001
 CRITIC_LEARNING_RATE = 0.001
