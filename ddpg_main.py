@@ -7,7 +7,7 @@ The algorithm is tested on the Pendulum-v0 and MountainCarContinuous-v0 OpenAI g
 
 import numpy as np
 import datetime
-import tensorflow as tf
+###import tensorflow as tf
 
 from tqdm import tqdm
 
