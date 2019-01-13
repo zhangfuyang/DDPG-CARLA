@@ -32,18 +32,20 @@ class observation_space(object):
 
 
 class Env(object):
-    def __init__(self, MONITOR_DIR, SEED, FPS, sess):
+    def __init__(self, MONITOR_DIR, SEED, FPS, sess, action_lambda=0.5):
         self.MONITOR_DIR = MONITOR_DIR
         self.client = None
         self.Image_agent = ImitationLearning(sess)
         self.action_space = action_space(2, (1.0, 1.0), (-1.0, -1.0), SEED)
-        self.observation_space = observation_space(512 + 3)
+        self.observation_space = observation_space(512 + 3 + 2)
         self.render_ = False
+        self.action_lambda = action_lambda
         self.image_dir_ = None
         self.image_i_ = 0
         self.FPS = FPS
         self.reward_time = 0
         self.prev_measurements = None
+        self.prev_action = {'steer': 0.0, 'acc': 0.0, 'brake': 0.0}
 
     def connected(self, client):
         self.render_ = False
@@ -55,9 +57,9 @@ class Env(object):
         acc = action['acc']
         brake = action['brake']
         control = Control()
-        control.steer = steer
-        control.throttle = acc
-        control.brake = brake
+        control.steer = steer * self.action_lambda + (1 - self.action_lambda) * self.prev_action['steer']
+        control.throttle = acc * self.action_lambda + (1 - self.action_lambda) * self.prev_action['acc']
+        control.brake = brake * self.action_lambda + (1 - self.action_lambda) * self.prev_action['brake']
         control.hand_brake = 0
         control.reverse = 0
         self.client.send_control(control)
@@ -76,11 +78,13 @@ class Env(object):
         offroad = measurements.player_measurements.intersection_offroad
         other_lane = measurements.player_measurements.intersection_otherlane
 
-        reward, done = self.reward(measurements, self.prev_measurements)
+        reward, done = self.reward(measurements, self.prev_measurements, action, self.prev_action)
+
+        self.prev_action = action
         self.prev_measurements = measurements
         info = 0
 
-        return np.concatenate((feature_vector, (speed, offroad, other_lane))), reward, done, info
+        return np.concatenate((feature_vector, (speed, offroad, other_lane, steer, acc - brake))), reward, done, info
 
     def reset(self):
         print('start to reset env')
@@ -89,6 +93,7 @@ class Env(object):
         self.render_ = False
         self.reward_time = 0
         self.prev_measurements = None
+        self.prev_action = {'steer': 0.0, 'acc': 0.0, 'brake': 0.0}
         settings = CarlaSettings()
         settings.set(
             SynchronousMode=True,
@@ -123,11 +128,12 @@ class Env(object):
         self.render_ = True
         self.image_dir_ = image_dir
 
-    def reward(self, measurements, prev_measurements):
+    def reward(self, measurements, prev_measurements, action, prev_action):
         """
         :param measurements:
         :param prev_measurements: due to the bug in the carla platform, we need to use this ugly
                                   parameter to alarm collision in low speed.
+        :param steer:
         :return: reward, done
         """
         done = False
@@ -146,7 +152,14 @@ class Env(object):
         if reward < -6:
             done = True
 
+        actual_steer = action['steer'] * self.action_lambda + (1 - self.action_lambda) * prev_action['steer']
+
         reward = reward + measurements.player_measurements.forward_speed
+        reward = reward - 4 * np.abs(actual_steer) * np.abs(actual_steer) * \
+                 measurements.player_measurements.forward_speed
+        reward = reward - 5 * (np.abs(action['steer'] - prev_action['steer']) +
+                               np.abs(action['acc'] - prev_action['acc']) +
+                               np.abs(action['brake'] - prev_action['brake']))
 
         if prev_measurements is None:
             return reward, done

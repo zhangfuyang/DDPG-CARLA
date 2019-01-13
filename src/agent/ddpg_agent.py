@@ -156,7 +156,6 @@ class DDPGAgent(BaseAgent):
                 else:
                     step_ = {'steer': action[0], 'acc': 0.0, 'brake': action[1]}
                 state, reward, terminal, info = self.env.step(step_)
-                print("        reward: ", reward)
                 total_episode_reward += reward
         ave_episode_reward = total_episode_reward / float(self.eval_episodes)
         print("\nAverage reward {}\n".format(ave_episode_reward))

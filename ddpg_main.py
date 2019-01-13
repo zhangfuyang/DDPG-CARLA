@@ -7,7 +7,7 @@ The algorithm is tested on the Pendulum-v0 and MountainCarContinuous-v0 OpenAI g
 
 import numpy as np
 import datetime
-###import tensorflow as tf
+import tensorflow as tf
 
 from tqdm import tqdm
 
@@ -44,13 +44,13 @@ RENDER_INTERVAL = 80
 ACTOR_LEARNING_RATE = 0.0001
 CRITIC_LEARNING_RATE = 0.001
 # Maximum number of episodes
-MAX_EPISODES = 1000000
+MAX_EPISODES = 200000
 # Maximum number of steps per episode
 MAX_STEPS_EPISODE = 5000
 # warmup steps.
 WARMUP_STEPS = 10000
 # Exploration duration
-EXPLORATION_EPISODES = 100000
+EXPLORATION_EPISODES = 10000
 # Discount factor
 GAMMA = 0.99
 # Soft target update parameter
@@ -60,7 +60,7 @@ BUFFER_SIZE = 1000000
 # Exploration noise variables Ornstein-Uhlenbeck variables
 OU_THETA = 10
 OU_MU = 0.
-OU_SIGMA = 0.5
+OU_SIGMA = 0.4
 # Explorationnoise for greedy policy
 MIN_EPSILON = 0.1
 MAX_EPSILON = 1
