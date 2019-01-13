@@ -25,10 +25,10 @@ flags = tf.app.flags
 # ================================
 #    UTILITY PARAMETERS
 # ================================
-# Gym environment name
-#'Pendulum-v0''MountainCarContinuous-v0'
+# environment name
 flags.DEFINE_string('env_name', 'carla', 'environment name in gym.')
 flags.DEFINE_boolean('env_render', True, 'whether render environment (display).')
+flags.DEFINE_integer('port', 2000, 'simulation listening port')
 DATETIME = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 RANDOM_SEED = 1234
 FPS = 10
@@ -135,7 +135,7 @@ def main(_):
 
         while True:
             try:
-                with make_carla_client('localhost', 2000) as client:
+                with make_carla_client('localhost', FLAGS.port) as client:
                     env.connected(client)
                     agent.train()
             except TCPConnectionError as error:
