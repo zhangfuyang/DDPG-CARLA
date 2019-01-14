@@ -87,7 +87,7 @@ class Env(object):
         self.prev_measurements = measurements
         info = 0
 
-        return np.concatenate((feature_vector, (steer, acc - brake, speed, offroad, other_lane))), reward, done, info
+        return np.concatenate((feature_vector, (control.steer, control.throttle - control.brake, speed, offroad, other_lane))), reward, done, info
 
     def reset(self):
         print('start to reset env')
@@ -160,9 +160,6 @@ class Env(object):
         reward = reward + measurements.player_measurements.forward_speed
         reward = reward - 4 * np.abs(actual_steer) * np.abs(actual_steer) * \
                  measurements.player_measurements.forward_speed
-        reward = reward - 5 * (np.abs(action['steer'] - prev_action['steer']) +
-                               np.abs(action['acc'] - prev_action['acc']) +
-                               np.abs(action['brake'] - prev_action['brake']))
 
         if prev_measurements is None:
             return reward, done
