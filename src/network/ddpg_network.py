@@ -55,7 +55,7 @@ class ActorNetwork(BaseNetwork):
                     net = fully_connected(net, 128, activation_fn=tf.nn.relu)
                     net = fully_connected(net, 64, activation_fn=tf.nn.relu)
                     # Final layer weight are initialized to Uniform[-3e-3, 3e-3]
-                    outputs = fully_connected(net, self.action_dim, activation_fn=tf.tanh, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
+                    outputs = fully_connected(net, self.action_dim, activation_fn=tf.tanh, weights_initializer=tf.random_uniform_initializer(-3e-5, 3e-5))
                     scaled_outputs = tf.multiply(outputs, self.action_bound) # Scale output to [-action_bound, action_bound]
         else:
             inputs = tf.placeholder(tf.float32, shape=(None,) + self.state_dim)
@@ -67,7 +67,7 @@ class ActorNetwork(BaseNetwork):
                     net = fully_connected(net, 128, activation_fn=tf.nn.relu)
                     net = fully_connected(net, 32, activation_fn=tf.nn.relu)
                     # Final layer weight are initialized to Uniform[-3e-3, 3e-3]
-                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
+                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-4, 3e-4))
                     scaled_outputs = discretize(outputs, self.action_dim)
             
         return inputs, phase, outputs, scaled_outputs
@@ -145,14 +145,15 @@ class CriticNetwork(BaseNetwork):
                 with tf.variable_scope(scope):
                     net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
                     net = fully_connected(tf.concat([net, action], 1), 300, activation_fn=tf.nn.relu)
-                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
+                    net = fully_connected(net, 128, activation_fn=tf.nn.relu)
+                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-4, 3e-4))
         else:
             action = tf.placeholder(tf.float32, [None, 1])
             with tf.variable_scope(self.scope):
                 with tf.variable_scope(scope):
                     net = fully_connected(inputs, 400, activation_fn=tf.nn.relu)
                     net = fully_connected(tf.concat([net, action], 1), 300, activation_fn=tf.nn.relu)
-                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-3, 3e-3))
+                    outputs = fully_connected(net, 1, weights_initializer=tf.random_uniform_initializer(-3e-4, 3e-4))
 
         return inputs, phase, action, outputs
 
