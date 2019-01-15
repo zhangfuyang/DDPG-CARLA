@@ -48,9 +48,9 @@ MAX_EPISODES = 200000
 # Maximum number of steps per episode
 MAX_STEPS_EPISODE = 5000
 # warmup steps.
-WARMUP_STEPS = 10000
+WARMUP_STEPS = 3000
 # Exploration duration
-EXPLORATION_EPISODES = 10000
+EXPLORATION_EPISODES = 20000
 # Discount factor
 GAMMA = 0.99
 # Soft target update parameter
@@ -122,7 +122,8 @@ def main(_):
         # Initialize replay memory
         replay_buffer = ReplayBuffer(BUFFER_SIZE, RANDOM_SEED)
         if action_type == 'Continuous':
-            noise = OrnsteinUhlenbeckProcess(OU_THETA, mu=OU_MU, sigma=OU_SIGMA, n_steps_annealing=EXPLORATION_EPISODES)
+            noise = OrnsteinUhlenbeckProcess(OU_THETA, mu=OU_MU, sigma=OU_SIGMA, n_steps_annealing=EXPLORATION_EPISODES,
+                                             size=action_dim)
         else:
             noise = GreedyPolicy(action_dim, EXPLORATION_EPISODES, MIN_EPSILON, MAX_EPSILON)
 

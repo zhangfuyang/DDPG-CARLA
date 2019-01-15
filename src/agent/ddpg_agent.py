@@ -80,9 +80,10 @@ class DDPGAgent(BaseAgent):
 
                 next_state, reward, terminal, info = self.env.step(step_)
 
-                if self.detail:
-                    print("action: ", action, "\treward: ", reward, "\tspeed: ", next_state[-3] * 10.0,
-                          "\toffroad: ", next_state[-2], "\tother_land: ", next_state[-1])
+                if self.detail and cur_episode % 5 == 0:
+                    [grad_, action_check] = self.actor.check_(np.expand_dims(state, 0))
+                    print("action: ", action_check, "\treward: ", reward, "\tspeed: ", next_state[-3] * 10.0,
+                          "gradients: ", grad_)
 
                 self.replay_buffer.add(state, action, reward, terminal, next_state)
 
@@ -118,7 +119,7 @@ class DDPGAgent(BaseAgent):
                     self.train_t += 1
                     # store model here
                     if self.train_t % self.model_store_periods == 0:
-                        self.saver.save(self.sess, os.path.join(self.model_dir, 'saveNet.ckpt'), global_step=self.train_t)
+                        self.saver.save(self.sess, os.path.join(self.model_dir, 'saveNet_' + str(cur_episode) + '.ckpt'), global_step=self.train_t)
 
                     # Update target networks
                     self.actor.update_target_network()
