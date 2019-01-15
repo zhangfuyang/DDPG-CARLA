@@ -20,7 +20,7 @@ class action_space(object):
         np.random.seed(self.seed)
 
     def sample(self):
-        return np.random.uniform(self.low, self.high)
+        return np.random.uniform(self.low + (0, 0.8), self.high)
 
 class observation_space(object):
     def __init__(self, dim, high=None, low=None, seed=None):
