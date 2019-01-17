@@ -4,12 +4,14 @@ from tqdm import tqdm
 import numpy as np
 from src.agent.agent import BaseAgent
 import os
+import random
 
 class DDPGAgent(BaseAgent):
-    def __init__(self, sess, action_type, actor, critic, gamma, env, replay_buffer, noise=None,
+    def __init__(self, sess, action_type, actor, critic, gamma, env, replay_buffer=None, noise=None,
                  exploration_episodes=10000, max_episodes=10000, max_steps_episode=10000,
                  warmup_steps=5000, mini_batch=32, eval_episodes=10, eval_periods=100, env_render=False,
-                 summary_dir=None, model_dir=None, detail=True, model_store_periods=1000, render_interval=50):
+                 summary_dir=None, model_dir=None, detail=True, model_store_periods=1000, render_interval=50,
+                 Inference=False, Inference_net_dir=None):
         """
         Deep Deterministic Policy Gradient Agent.
         Args:
@@ -28,12 +30,23 @@ class DDPGAgent(BaseAgent):
         self.critic = critic
         self.gamma = gamma
         self.cur_episode = 0
-        self.env.Image_agent.load_model()
+        if Inference is False:
+            self.env.Image_agent.load_model()
+        else:
+            self.Restore(Inference_net_dir)
         self.detail = detail
         self.model_dir = model_dir
         self.model_store_periods = model_store_periods
         self.train_t = 0
         self.render_interval = render_interval
+
+    def Restore(self, net_dir):
+        saver = tf.train.Saver()
+        if not os.path.exists(net_dir):
+            raise RuntimeError('failed to find the models path')
+        ckpt = tf.train.get_checkpoint_state(net_dir)
+        saver.restore(self.sess, ckpt.model_checkpoint_path)
+        print('Restoring from ', net_dir)
 
     def get_episode(self):
         return self.cur_episode
@@ -42,6 +55,7 @@ class DDPGAgent(BaseAgent):
         # Initialize target network weights
         self.actor.update_target_network()
         self.critic.update_target_network()
+        reward_flag = False #used to set whether store too much positive sample
 
         for cur_episode in tqdm(range(self.max_episodes)):
             if cur_episode < self.cur_episode:
@@ -49,7 +63,11 @@ class DDPGAgent(BaseAgent):
             self.cur_episode = cur_episode
             # evaluate here. 
             if cur_episode % self.eval_periods == 0 and cur_episode != 0:
-                self.evaluate(cur_episode)
+                ave_reward = self.evaluate(cur_episode)
+                if ave_reward > 150:
+                    reward_flag = True
+                else:
+                    reward_flag = False
 
             state = self.env.reset()
 
@@ -84,8 +102,11 @@ class DDPGAgent(BaseAgent):
                     [grad_, action_check] = self.actor.check_(np.expand_dims(state, 0))
                     print("true_action: ", action,"action: ", action_check, "\treward: ", reward, "\tspeed: ", next_state[-3] * 10.0,
                           "gradients: ", grad_)
-
-                self.replay_buffer.add(state, action, reward, terminal, next_state)
+                if reward >= -5 and reward_flag:
+                    if random.random() > 0.8:
+                        self.replay_buffer.add(state, action, reward_flag, terminal, next_state)
+                else:
+                    self.replay_buffer.add(state, action, reward, terminal, next_state)
 
                 # Keep adding experience to the memory until there are at least minibatch size samples
                 if self.replay_buffer.size() > self.warmup_steps:
@@ -165,4 +186,5 @@ class DDPGAgent(BaseAgent):
         eval_episode_summary.value.add(simple_value=ave_episode_reward, tag="eval/reward")
         self.writer.add_summary(eval_episode_summary, cur_episode)
         print("===============evaluation finish=================")
+        return ave_episode_reward
 

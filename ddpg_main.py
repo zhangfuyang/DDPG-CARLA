@@ -26,7 +26,7 @@ flags = tf.app.flags
 #    UTILITY PARAMETERS
 # ================================
 # environment name
-flags.DEFINE_string('env_name', 'carla_soft', 'environment name in gym.')
+flags.DEFINE_string('env_name', 'carla_soft', 'environment name.')
 flags.DEFINE_boolean('env_render', True, 'whether render environment (display).')
 flags.DEFINE_integer('port', 2000, 'simulation listening port')
 DATETIME = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -87,7 +87,6 @@ MONITOR_DIR = './results/{}/{}/pic_ddpg'.format(FLAGS.env_name, DATETIME)
 SUMMARY_DIR = './results/{}/{}/tf_ddpg'.format(FLAGS.env_name, DATETIME)
 # Directory for storing model
 MODEL_DIR = './results/{}/{}/tf_net'.format(FLAGS.env_name, DATETIME)
-
 
 
 # ================================

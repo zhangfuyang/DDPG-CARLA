@@ -20,7 +20,7 @@ class action_space(object):
         np.random.seed(self.seed)
 
     def sample(self):
-        return np.random.uniform(self.low + (0, 0.8), self.high)
+        return np.random.uniform(self.low + (0, 0.5), self.high)
 
 class observation_space(object):
     def __init__(self, dim, high=None, low=None, seed=None):
@@ -28,7 +28,6 @@ class observation_space(object):
         self.high = high
         self.low = low
         self.seed = seed
-
 
 
 class Env(object):
@@ -147,17 +146,24 @@ class Env(object):
                 measurements.player_measurements.collision_pedestrians != 0 or \
                 measurements.player_measurements.collision_vehicles != 0:
             reward = reward - 30
+            done = True
 
         """road"""
-        reward = reward - 10 * (measurements.player_measurements.intersection_offroad +
+        reward = reward - 15 * (measurements.player_measurements.intersection_offroad +
                                measurements.player_measurements.intersection_otherlane)
 
-        if reward < -6:
-            done = True
+        #if reward < -12:
+        #   done = True
 
         actual_steer = action['steer'] * self.action_lambda + (1 - self.action_lambda) * prev_action['steer']
 
-        reward = reward + measurements.player_measurements.forward_speed
+        if measurements.player_measurements.forward_speed <= 6:
+            reward = reward + measurements.player_measurements.forward_speed**2 / 6.0
+        elif measurements.player_measurements.forward_speed <= 8:
+            reward = reward + 3 * (8 - measurements.player_measurements.forward_speed)
+        else:
+            reward = reward - 2 * (measurements.player_measurements.forward_speed - 8) ** 2
+
         reward = reward - 4 * np.abs(actual_steer) * np.abs(actual_steer) * \
                  measurements.player_measurements.forward_speed
 
