@@ -61,6 +61,8 @@ class Env(object):
         control.brake = brake * self.action_lambda + (1 - self.action_lambda) * self.prev_action['brake']
         control.hand_brake = 0
         control.reverse = 0
+        if self.prev_measurements.player_measurements.forward_speed >= 8:
+            control.throttle = 0.5
         self.client.send_control(control)
         measurements, sensor_data = self.client.read_data()
         if self.render_:
