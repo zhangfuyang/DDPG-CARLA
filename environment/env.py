@@ -20,7 +20,7 @@ class action_space(object):
         np.random.seed(self.seed)
 
     def sample(self):
-        return np.random.uniform(self.low + (0, 0.5), self.high)
+        return np.random.uniform(self.low + (0, 0.8), self.high)
 
 class observation_space(object):
     def __init__(self, dim, high=None, low=None, seed=None):
@@ -149,7 +149,7 @@ class Env(object):
             done = True
 
         """road"""
-        reward = reward - 15 * (measurements.player_measurements.intersection_offroad +
+        reward = reward - 10 * (measurements.player_measurements.intersection_offroad +
                                measurements.player_measurements.intersection_otherlane)
 
         #if reward < -12:
