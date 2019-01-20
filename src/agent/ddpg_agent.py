@@ -100,7 +100,7 @@ class DDPGAgent(BaseAgent):
 
                 if self.detail and cur_episode % 5 == 0:
                     [grad_, action_check] = self.actor.check_(np.expand_dims(state, 0))
-                    print("true_action: ", action,"action: ", action_check, "\treward: ", reward, "\tspeed: ", next_state[-3] * 10.0)
+                    print("true_action: ", action,"action: ", action_check, "\treward: ", reward, "\tspeed: ", next_state[-3] * 10.0, "\toffroad: ", next_state[-1] + next_state[-2])
                 if reward >= -5 and reward_flag:
                     if random.random() > 0.8:
                         self.replay_buffer.add(state, action, reward_flag, terminal, next_state)
