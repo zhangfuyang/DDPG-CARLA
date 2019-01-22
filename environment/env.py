@@ -61,7 +61,7 @@ class Env(object):
         control.brake = brake * self.action_lambda + (1 - self.action_lambda) * self.prev_action['brake']
         control.hand_brake = 0
         control.reverse = 0
-        if self.prev_measurements.player_measurements.forward_speed >= 8:
+        if self.prev_measurements is not None and self.prev_measurements.player_measurements.forward_speed >= 8:
             control.throttle = 0.5 if control.throttle > 0.5 else control.throttle
         self.client.send_control(control)
         measurements, sensor_data = self.client.read_data()
@@ -177,13 +177,15 @@ class Env(object):
                          prev_measurements.player_measurements.transform.location.y
         distance = np.sqrt((x - prev_x)**2 + (y - prev_y)**2)
 
-        if distance < 1.0 / self.FPS * 1:
+        if distance < 1.0 / self.FPS * 1 or measurements.player_measurements.forward_speed < 0:
             reward = reward - 2
+            if measurements.player_measurements.forward_speed < 0:
+                self.reward_time += 5
             self.reward_time += 1
         else:
             self.reward_time = 0
 
-        if self.reward_time == 30:
+        if self.reward_time == 20:
             done = True
             self.reward_time = 0
 
