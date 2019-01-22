@@ -185,7 +185,7 @@ class Env(object):
         else:
             self.reward_time = 0
 
-        if self.reward_time == 20:
+        if self.reward_time >= 20:
             done = True
             self.reward_time = 0
 
