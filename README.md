@@ -1,6 +1,7 @@
 DDPG-CARLA
 ===============
-## still working on!!!
+## Update: This repository has been deprecated due to some hard code. https://github.com/zhangfuyang/rl_CARLA.git is the new repository for this project. If you are interested with my work, please go to this repo.
+
 Welcome to my repo! My experiment environment is Ubuntu16.04, python3.5 and tensorflow1.12.0. If you have any issue about the code, please don't hesitate to contact me.
 
 ## Installation
